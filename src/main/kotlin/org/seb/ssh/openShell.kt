@@ -4,6 +4,8 @@ import com.beust.jcommander.JCommander
 import java.io.File
 import java.io.FileReader
 
+// Unfortunately the resulting shell is pretty bad.
+
 fun main(args: Array<String>) {
 
     val params = Params()
@@ -21,11 +23,24 @@ fun main(args: Array<String>) {
 
     val passphrase = readLine()!!
 
-    GetShell.apply(
-        params.username!!,
-        params.hostname!!,
-        passphrase,
-        keyPair
-    )
+    val pair =
+        OpenChannel().apply(
+            params.username!!,
+            params.hostname!!,
+            passphrase,
+            keyPair,
+            System.`in`,
+            System.out,
+            System.err
+        )
+
+    val client = pair.first
+    val channel = pair.second
+
+    KeepAlive.apply(channel)
+
+    channel.close(false)
+
+    client.stop()
 
 }

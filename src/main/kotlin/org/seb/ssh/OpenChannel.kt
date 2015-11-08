@@ -1,19 +1,22 @@
 package org.seb.ssh
 
 import org.apache.sshd.client.SshClient
-import org.apache.sshd.client.session.ClientSession
+import org.apache.sshd.client.channel.ClientChannel
 import org.apache.sshd.common.util.io.NoCloseInputStream
 import org.apache.sshd.common.util.io.NoCloseOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.security.KeyPair
 
-object GetShell {
+class OpenChannel(private val client: SshClient = SshClient.setUpDefaultClient()) {
 
     fun apply(username: String,
               hostname: String,
               passphrase: String,
-              keyPair: KeyPair) {
-
-        val client = SshClient.setUpDefaultClient()
+              keyPair: KeyPair,
+              inputStream: InputStream,
+              outputStream: OutputStream,
+              errorStream: OutputStream): Pair<SshClient, ClientChannel> {
 
         client.start()
 
@@ -26,17 +29,13 @@ object GetShell {
 
         val channel = session.createChannel("shell")
 
-        channel.setIn(NoCloseInputStream(System.`in`))
-        channel.setOut(NoCloseOutputStream(System.out))
-        channel.setErr(NoCloseOutputStream(System.err))
+        channel.setIn(NoCloseInputStream(inputStream))
+        channel.setOut(NoCloseOutputStream(outputStream))
+        channel.setErr(NoCloseOutputStream(errorStream))
 
         channel.open()
 
-        channel.waitFor(ClientSession.CLOSED, 0)
-
-        session.close(false)
-
-        client.stop()
+        return Pair(client, channel)
 
     }
 
